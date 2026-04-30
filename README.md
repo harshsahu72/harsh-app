@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🔥 Flamr — Modern Dating App
 
 A full-stack **Tinder-like dating application** built with React, Node.js, Express, MongoDB, and Socket.io. Features real-time chat, swipe cards with animations, match detection, and a beautiful dark-mode UI.
@@ -311,3 +312,6 @@ MIT License — built with ❤️ and 🔥 by Harsh Sahu
 ---
 
 *Made with Flamr — Find your flame! 🔥*
+=======
+# Flamr
+>>>>>>> 7913238ba278f0d685dbd8b60902e311d003bfa7
