@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # 🔥 Flamr — Modern Dating App
 
 A full-stack **Tinder-like dating application** built with React, Node.js, Express, MongoDB, and Socket.io. Features real-time chat, swipe cards with animations, match detection, and a beautiful dark-mode UI.
