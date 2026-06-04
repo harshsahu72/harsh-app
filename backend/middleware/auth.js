@@ -26,4 +26,19 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-module.exports = { authenticate };
+const checkSubscription = async (req, res, next) => {
+  const user = req.user;
+  const isTrialActive = user.trialExpiresAt && new Date() < user.trialExpiresAt;
+  const isSubscriptionActive = user.subscriptionExpiresAt && new Date() < user.subscriptionExpiresAt;
+
+  if (isTrialActive || isSubscriptionActive || user.isVerified) {
+    return next();
+  }
+
+  res.status(403).json({ 
+    message: 'Trial expired. Please subscribe to continue.',
+    trialExpired: true 
+  });
+};
+
+module.exports = { authenticate, checkSubscription };

@@ -1,15 +1,15 @@
 const express = require('express');
 const User = require('../models/User');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, checkSubscription } = require('../middleware/auth');
 
 const router = express.Router();
 
 // @route   GET /api/users/discover
 // @desc    Get users to swipe on (filtered)
 // @access  Private
-router.get('/discover', authenticate, async (req, res) => {
+router.get('/discover', authenticate, checkSubscription, async (req, res) => {
   try {
-    const currentUser = await User.findById(req.user._id);
+    const currentUser = req.user;
     const { ageMin, ageMax, gender, page = 0 } = req.query;
 
     const minAge = ageMin ? parseInt(ageMin) : currentUser.preferences.ageMin;
@@ -92,10 +92,10 @@ router.put('/profile', authenticate, async (req, res) => {
     if (interestedIn) updates.interestedIn = interestedIn;
     if (gender) updates.gender = gender;
 
-    // Check if profile is complete
+    // Check if profile is complete (name, age, gender are the minimum requirements)
     const user = await User.findById(req.user._id);
     const merged = { ...user.toObject(), ...updates };
-    if (merged.name && merged.age && merged.gender && merged.bio && merged.photos?.length > 0) {
+    if (merged.name && merged.age && merged.gender) {
       updates.isProfileComplete = true;
     }
 
@@ -118,7 +118,7 @@ router.put('/profile', authenticate, async (req, res) => {
 // @route   POST /api/users/like/:id
 // @desc    Like a user
 // @access  Private
-router.post('/like/:id', authenticate, async (req, res) => {
+router.post('/like/:id', authenticate, checkSubscription, async (req, res) => {
   try {
     const likedUserId = req.params.id;
     const currentUserId = req.user._id;
@@ -144,9 +144,8 @@ router.post('/like/:id', authenticate, async (req, res) => {
     if (isMatch) {
       // Create match
       const Match = require('../models/Match');
-      const { v4: uuidv4 } = require('uuid');
       
-      // Generate conversation ID (sorted to be consistent)
+      // Generate conversation ID (sorted to be consistent regardless of who liked first)
       const ids = [currentUserId.toString(), likedUserId.toString()].sort();
       const conversationId = `conv_${ids[0]}_${ids[1]}`;
 
@@ -191,7 +190,7 @@ router.post('/like/:id', authenticate, async (req, res) => {
 // @route   POST /api/users/dislike/:id
 // @desc    Dislike (pass) a user
 // @access  Private
-router.post('/dislike/:id', authenticate, async (req, res) => {
+router.post('/dislike/:id', authenticate, checkSubscription, async (req, res) => {
   try {
     const dislikedUserId = req.params.id;
     const currentUserId = req.user._id;
@@ -209,16 +208,18 @@ router.post('/dislike/:id', authenticate, async (req, res) => {
 });
 
 // @route   POST /api/users/verify
-// @desc    Pay $49 to verify account and ensure original user
+// @desc    Subscribe for 499 monthly after 24h trial
 // @access  Private
 router.post('/verify', authenticate, async (req, res) => {
   try {
-    // In a real app, verify Stripe payment intent here.
     const { paymentToken } = req.body;
     
     if (paymentToken !== 'mock-payment-success') {
       return res.status(400).json({ message: 'Payment failed or invalid.' });
     }
+
+    // Set subscription to 30 days from now
+    const subscriptionExpiresAt = new Date(+new Date() + 30 * 24 * 60 * 60 * 1000);
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
@@ -226,19 +227,20 @@ router.post('/verify', authenticate, async (req, res) => {
         $set: { 
           isVerified: true, 
           verificationStatus: 'verified',
-          isPremium: true // Optionally give premium features
+          isPremium: true,
+          subscriptionExpiresAt
         } 
       },
       { new: true }
     ).select('-password -likedUsers -dislikedUsers');
 
     res.json({
-      message: 'Payment of $49 successful! Your account is now verified. 🔥',
+      message: 'Subscription successful! You have 30 days of full access. 🔥',
       user: updatedUser,
     });
   } catch (error) {
-    console.error('Verification error:', error);
-    res.status(500).json({ message: 'Server error during verification.' });
+    console.error('Subscription error:', error);
+    res.status(500).json({ message: 'Server error during subscription.' });
   }
 });
 

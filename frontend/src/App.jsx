@@ -17,11 +17,31 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const PublicRoute = ({ children }) => {
-  const { isAuthenticated } = useAuthStore();
-  return !isAuthenticated ? children : <Navigate to="/discover" replace />;
+  const { isAuthenticated, user } = useAuthStore();
+  if (!isAuthenticated) return children;
+  return user?.isProfileComplete ? <Navigate to="/discover" replace /> : <Navigate to="/edit-profile" replace />;
 };
 
+import { useEffect } from 'react';
+
 export default function App() {
+  const { checkAuth, isLoading } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  if (isLoading) {
+    return (
+      <div style={{
+        height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--aurora-bg)', color: 'white'
+      }}>
+        <div className="loader"></div>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Toaster

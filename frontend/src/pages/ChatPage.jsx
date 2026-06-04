@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Heart, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Send, Phone, Video } from 'lucide-react';
 import api from '../utils/api';
 import { useAuthStore } from '../store/authStore';
+import { useCallStore } from '../store/callStore';
 import { getSocket, connectSocket } from '../utils/socket';
 import toast from 'react-hot-toast';
 
@@ -42,6 +43,7 @@ function MessageBubble({ msg, isOwn }) {
 export default function ChatPage() {
   const { conversationId } = useParams();
   const { user } = useAuthStore();
+  const { initiateCall } = useCallStore();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [newMsg, setNewMsg] = useState('');
@@ -153,7 +155,7 @@ export default function ChatPage() {
     socket.emit('stop_typing', { roomId: conversationId, userId: user._id });
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       handleSend(e);
     }
@@ -164,9 +166,10 @@ export default function ChatPage() {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
-      height: 'calc(100vh - 70px)',
+      height: 'calc(100dvh - 70px)',
       maxWidth: '700px', margin: '0 auto',
       width: '100%',
+      position: 'relative',
     }}>
       {/* Chat Header */}
       <div className="glass-dark" style={{
@@ -236,11 +239,40 @@ export default function ChatPage() {
           )}
         </div>
 
-        <button style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: 'var(--flame-muted)', padding: '4px',
-        }}>
-          <Heart size={20} />
+        <button
+          id="voice-call-btn"
+          title="Voice Call"
+          onClick={() => otherUser && initiateCall?.('voice', otherUser)}
+          disabled={!otherUser || !initiateCall}
+          style={{
+            background: 'none', border: 'none', cursor: otherUser ? 'pointer' : 'not-allowed',
+            color: otherUser ? 'var(--aurora-primary)' : 'var(--flame-muted)', padding: '6px',
+            display: 'flex', alignItems: 'center',
+            transition: 'color 0.2s, transform 0.2s',
+            opacity: otherUser ? 1 : 0.4,
+          }}
+          onMouseEnter={e => { if (otherUser) e.currentTarget.style.transform = 'scale(1.15)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+        >
+          <Phone size={20} />
+        </button>
+
+        <button
+          id="video-call-btn"
+          title="Video Call"
+          onClick={() => otherUser && initiateCall?.('video', otherUser)}
+          disabled={!otherUser || !initiateCall}
+          style={{
+            background: 'none', border: 'none', cursor: otherUser ? 'pointer' : 'not-allowed',
+            color: otherUser ? 'var(--aurora-secondary)' : 'var(--flame-muted)', padding: '6px',
+            display: 'flex', alignItems: 'center',
+            transition: 'color 0.2s, transform 0.2s',
+            opacity: otherUser ? 1 : 0.4,
+          }}
+          onMouseEnter={e => { if (otherUser) e.currentTarget.style.transform = 'scale(1.15)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+        >
+          <Video size={20} />
         </button>
       </div>
 
@@ -309,7 +341,7 @@ export default function ChatPage() {
             type="text"
             value={newMsg}
             onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder={`Message ${otherUser?.name || ''}...`}
             className="input-field"
             style={{

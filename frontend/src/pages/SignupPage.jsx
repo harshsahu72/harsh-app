@@ -113,11 +113,12 @@ export default function SignupPage() {
         </div>
 
         {step === 1 && (
-          <form onSubmit={handleNext} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form onSubmit={handleNext} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ position: 'relative' }}>
               <Mail size={18} style={{
                 position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)',
                 color: 'var(--flame-muted)',
+                zIndex: 5,
               }} />
               <input
                 type="email"
@@ -127,6 +128,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 className="input-field"
                 style={{ paddingLeft: '46px' }}
+                required
               />
             </div>
 
@@ -134,6 +136,7 @@ export default function SignupPage() {
               <Lock size={18} style={{
                 position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)',
                 color: 'var(--flame-muted)',
+                zIndex: 5,
               }} />
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -143,6 +146,8 @@ export default function SignupPage() {
                 onChange={handleChange}
                 className="input-field"
                 style={{ paddingLeft: '46px', paddingRight: '46px' }}
+                required
+                minLength={6}
               />
               <button
                 type="button"
@@ -151,6 +156,7 @@ export default function SignupPage() {
                   position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)',
                   background: 'none', border: 'none', cursor: 'pointer',
                   color: 'var(--flame-muted)',
+                  zIndex: 5,
                 }}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -160,7 +166,7 @@ export default function SignupPage() {
             <button
               type="submit"
               className="btn-primary"
-              style={{ width: '100%', padding: '15px', fontSize: '16px', marginTop: '8px' }}
+              style={{ width: '100%', marginTop: '8px' }}
             >
               Continue →
             </button>
@@ -168,11 +174,12 @@ export default function SignupPage() {
         )}
 
         {step === 2 && (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ position: 'relative' }}>
               <User size={18} style={{
                 position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)',
                 color: 'var(--flame-muted)',
+                zIndex: 5,
               }} />
               <input
                 type="text"
@@ -182,6 +189,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 className="input-field"
                 style={{ paddingLeft: '46px' }}
+                required
               />
             </div>
 
@@ -189,6 +197,7 @@ export default function SignupPage() {
               <Calendar size={18} style={{
                 position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)',
                 color: 'var(--flame-muted)',
+                zIndex: 5,
               }} />
               <input
                 type="number"
@@ -200,6 +209,7 @@ export default function SignupPage() {
                 max="100"
                 className="input-field"
                 style={{ paddingLeft: '46px' }}
+                required
               />
             </div>
 
@@ -241,7 +251,7 @@ export default function SignupPage() {
                 type="button"
                 className="btn-secondary"
                 onClick={() => setStep(1)}
-                style={{ flex: 1, padding: '15px' }}
+                style={{ flex: 1 }}
               >
                 ← Back
               </button>
@@ -250,9 +260,8 @@ export default function SignupPage() {
                 className="btn-primary"
                 disabled={isLoading}
                 style={{
-                  flex: 2, padding: '15px', fontSize: '15px',
+                  flex: 2,
                   opacity: isLoading ? 0.7 : 1,
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
                 }}
               >
                 {isLoading ? 'Creating...' : 'Create Account 🔥'}

@@ -1,14 +1,29 @@
 const express = require('express');
 const Message = require('../models/Message');
 const Match = require('../models/Match');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, checkSubscription } = require('../middleware/auth');
 
 const router = express.Router();
+
+// @route   GET /api/messages/unread/count
+// @desc    Get unread message count
+// @access  Private
+router.get('/unread/count', authenticate, async (req, res) => {
+  try {
+    const count = await Message.countDocuments({
+      receiver: req.user._id,
+      isRead: false,
+    });
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
 
 // @route   GET /api/messages/:conversationId
 // @desc    Get messages for a conversation
 // @access  Private
-router.get('/:conversationId', authenticate, async (req, res) => {
+router.get('/:conversationId', authenticate, checkSubscription, async (req, res) => {
   try {
     const { conversationId } = req.params;
     const { page = 0, limit = 50 } = req.query;
@@ -51,7 +66,7 @@ router.get('/:conversationId', authenticate, async (req, res) => {
 // @route   POST /api/messages/:conversationId
 // @desc    Send a message (REST fallback, prefer Socket.io)
 // @access  Private
-router.post('/:conversationId', authenticate, async (req, res) => {
+router.post('/:conversationId', authenticate, checkSubscription, async (req, res) => {
   try {
     const { conversationId } = req.params;
     const { content, receiverId } = req.body;
@@ -93,21 +108,6 @@ router.post('/:conversationId', authenticate, async (req, res) => {
     res.status(201).json({ message: message });
   } catch (error) {
     console.error('Send message error:', error);
-    res.status(500).json({ message: 'Server error.' });
-  }
-});
-
-// @route   GET /api/messages/unread/count
-// @desc    Get unread message count
-// @access  Private
-router.get('/unread/count', authenticate, async (req, res) => {
-  try {
-    const count = await Message.countDocuments({
-      receiver: req.user._id,
-      isRead: false,
-    });
-    res.json({ count });
-  } catch (error) {
     res.status(500).json({ message: 'Server error.' });
   }
 });

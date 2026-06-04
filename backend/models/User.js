@@ -73,6 +73,11 @@ const userSchema = new mongoose.Schema({
   lastActive: { type: Date, default: Date.now },
   isOnline: { type: Boolean, default: false },
   isPremium: { type: Boolean, default: false },
+  subscriptionExpiresAt: { type: Date, default: null },
+  trialExpiresAt: { 
+    type: Date, 
+    default: () => new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours trial
+  },
 }, { timestamps: true });
 
 // Hash password before save

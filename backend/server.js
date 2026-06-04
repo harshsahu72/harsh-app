@@ -1,3 +1,11 @@
+// Override DNS resolution servers for Node's internal dns library (c-ares)
+// to prevent ECONNREFUSED with MongoDB Atlas querySrv SRV records on Windows.
+try {
+  require('dns').setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {
+  console.warn('Failed to set custom DNS servers:', e);
+}
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -20,7 +28,7 @@ const server = http.createServer(app);
 // Socket.io setup
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: true, // Allow all origins — consistent with Express CORS (dev mode)
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -28,8 +36,10 @@ const io = new Server(server, {
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: true, // Allow all origins (dev mode)
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -111,6 +121,50 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('user_stop_typing', { userId });
   });
 
+  // ─── Call Signaling ─────────────────────────────────────────────────
+  // Step 1: Caller sends offer to callee
+  socket.on('call_offer', ({ to, offer, callType, from }) => {
+    const recipientSocketId = onlineUsers.get(to);
+    if (recipientSocketId) {
+      io.to(recipientSocketId).emit('incoming_call', { from, offer, callType });
+    } else {
+      socket.emit('call_failed', { reason: 'User is offline or unavailable.' });
+    }
+  });
+
+  // Step 2: Callee sends answer back to caller
+  socket.on('call_answer', ({ to, answer }) => {
+    const callerSocketId = onlineUsers.get(to);
+    if (callerSocketId) {
+      io.to(callerSocketId).emit('call_answered', { answer });
+    }
+  });
+
+  // Step 3: Exchange ICE candidates (both directions)
+  socket.on('call_ice_candidate', ({ to, candidate }) => {
+    const targetSocketId = onlineUsers.get(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('ice_candidate', { candidate });
+    }
+  });
+
+  // Callee rejects the incoming call
+  socket.on('call_reject', ({ to }) => {
+    const callerSocketId = onlineUsers.get(to);
+    if (callerSocketId) {
+      io.to(callerSocketId).emit('call_rejected');
+    }
+  });
+
+  // Either party ends the active call
+  socket.on('call_end', ({ to }) => {
+    const targetSocketId = onlineUsers.get(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call_ended');
+    }
+  });
+  // ────────────────────────────────────────────────────────────────────
+
   // Disconnect
   socket.on('disconnect', () => {
     if (socket.userId) {
@@ -122,9 +176,12 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Flamr server running on port ${PORT}`);
-  console.log(`🌐 API available at http://localhost:${PORT}/api`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Flamr server running on port ${PORT}`);
+    console.log(`🌐 Local:   http://localhost:${PORT}/api`);
+    console.log(`📱 Network: http://172.21.2.152:${PORT}/api`);
+  });
+}
 
-module.exports = { app, io };
+module.exports = app;

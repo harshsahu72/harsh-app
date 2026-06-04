@@ -24,7 +24,15 @@ export const useAuthStore = create(
           localStorage.setItem('flamr_token', data.token);
           return { success: true, message: data.message };
         } catch (err) {
-          const message = err.response?.data?.message || 'Login failed.';
+          console.error('Login error details:', err);
+          let message = 'Login failed. ';
+          if (err.response) {
+            message = err.response.data?.message || `Server error: ${err.response.status}`;
+          } else if (err.request) {
+            message = 'Network error. Could not connect to the server.';
+          } else {
+            message = err.message;
+          }
           set({ error: message, isLoading: false });
           return { success: false, message };
         }
@@ -43,9 +51,39 @@ export const useAuthStore = create(
           localStorage.setItem('flamr_token', data.token);
           return { success: true, message: data.message };
         } catch (err) {
-          const message = err.response?.data?.message || 'Signup failed.';
+          console.error('Signup error details:', err);
+          let message = 'Signup failed. ';
+          if (err.response) {
+            message = err.response.data?.message || `Server error: ${err.response.status}`;
+          } else if (err.request) {
+            message = 'Network error. Could not connect to the server.';
+          } else {
+            message = err.message;
+          }
           set({ error: message, isLoading: false });
           return { success: false, message };
+        }
+      },
+
+      checkAuth: async () => {
+        const token = localStorage.getItem('flamr_token');
+        if (!token) {
+          set({ isAuthenticated: false, user: null });
+          return;
+        }
+
+        set({ isLoading: true });
+        try {
+          const { data } = await api.get('/auth/me');
+          set({
+            user: data.user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } catch (err) {
+          console.error('Session validation failed:', err);
+          localStorage.removeItem('flamr_token');
+          set({ user: null, token: null, isAuthenticated: false, isLoading: false });
         }
       },
 

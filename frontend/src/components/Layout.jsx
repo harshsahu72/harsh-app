@@ -3,6 +3,7 @@ import { Flame, Heart, MessageCircle, User, LogOut } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useEffect } from 'react';
 import { connectSocket, disconnectSocket } from '../utils/socket';
+import CallManager from './CallManager';
 import toast from 'react-hot-toast';
 
 export default function Layout() {
@@ -60,23 +61,23 @@ export default function Layout() {
           </span>
         </div>
 
-        {/* Nav */}
-        <nav style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+        {/* Desktop Nav */}
+        <nav className="desktop-only" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
           <NavLink to="/discover" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-            <Flame size={22} />
+            <Flame size={20} />
             <span>Discover</span>
           </NavLink>
           <NavLink to="/matches" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-            <Heart size={22} />
+            <Heart size={20} />
             <span>Matches</span>
           </NavLink>
           <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-            <User size={22} />
+            <User size={20} />
             <span>Profile</span>
           </NavLink>
         </nav>
 
-        {/* Logout */}
+        {/* Logout Button */}
         <button
           onClick={handleLogout}
           style={{
@@ -93,37 +94,35 @@ export default function Layout() {
             fontWeight: '500',
             transition: 'all 0.2s ease',
           }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(255, 68, 88, 0.2)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'rgba(255, 68, 88, 0.1)';
-          }}
         >
           <LogOut size={15} />
-          <span>Logout</span>
+          <span className="desktop-only">Logout</span>
         </button>
       </header>
 
       {/* Main Content */}
-      <main style={{ flex: 1, overflowY: 'auto' }}>
+      <main style={{ flex: 1, paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}>
         <Outlet />
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="glass-dark" style={{
-        display: 'none',
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: '8px 0',
-        borderTop: '1px solid var(--flame-border)',
-        zIndex: 50,
-        justifyContent: 'space-around',
-        '@media (maxWidth: 768px)': { display: 'flex' },
-      }}>
+      <nav className="mobile-only bottom-nav">
+        <NavLink to="/discover" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <Flame size={22} />
+          <span>Discover</span>
+        </NavLink>
+        <NavLink to="/matches" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <Heart size={22} />
+          <span>Matches</span>
+        </NavLink>
+        <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <User size={22} />
+          <span>Profile</span>
+        </NavLink>
       </nav>
+
+      {/* Global call overlay — renders IncomingCallModal or CallScreen */}
+      <CallManager />
     </div>
   );
 }

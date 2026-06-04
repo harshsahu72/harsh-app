@@ -296,7 +296,8 @@ export default function EditProfilePage() {
             Add up to 6 photos. Your first photo will be your profile photo. 📸
           </p>
           <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
             gap: '12px',
           }}>
             {[...form.photos, ...(form.photos.length < 6 ? ['add'] : [])].slice(0, 6).map((photo, idx) => (

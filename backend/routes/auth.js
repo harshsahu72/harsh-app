@@ -36,7 +36,6 @@ router.post('/signup', async (req, res) => {
     });
 
     await user.save();
-
     const token = generateToken(user._id);
 
     res.status(201).json({
@@ -50,10 +49,19 @@ router.post('/signup', async (req, res) => {
         gender: user.gender,
         isProfileComplete: user.isProfileComplete,
         isVerified: user.isVerified,
+        trialExpiresAt: user.trialExpiresAt,
+        subscriptionExpiresAt: user.subscriptionExpiresAt,
       },
     });
   } catch (error) {
     console.error('Signup error:', error);
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({ message: messages[0] });
+    }
+    if (error.code === 11000) {
+      return res.status(409).json({ message: 'Email already exists.' });
+    }
     res.status(500).json({ message: 'Server error. Please try again.' });
   }
 });
@@ -70,7 +78,11 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user (include password for comparison)
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    // Use case-insensitive search for older accounts
+    const user = await User.findOne({ 
+      email: { $regex: new RegExp(`^${email}$`, 'i') } 
+    }).select('+password');
+
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
@@ -80,9 +92,13 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
-    // Update last active
-    user.lastActive = new Date();
-    await user.save({ validateBeforeSave: false });
+    // Update last active in background
+    try {
+      user.lastActive = new Date();
+      await user.save({ validateBeforeSave: false });
+    } catch (saveError) {
+      console.error('Failed to update lastActive:', saveError);
+    }
 
     const token = generateToken(user._id);
 
@@ -95,19 +111,21 @@ router.post('/login', async (req, res) => {
         name: user.name,
         age: user.age,
         gender: user.gender,
-        photos: user.photos,
-        bio: user.bio,
-        interests: user.interests,
+        photos: user.photos || [],
+        bio: user.bio || '',
+        interests: user.interests || [],
         isProfileComplete: user.isProfileComplete,
         isVerified: user.isVerified,
-        location: user.location,
-        preferences: user.preferences,
-        interestedIn: user.interestedIn,
+        location: user.location || { city: '', country: '' },
+        preferences: user.preferences || { ageMin: 18, ageMax: 50 },
+        interestedIn: user.interestedIn || ['everyone'],
+        trialExpiresAt: user.trialExpiresAt,
+        subscriptionExpiresAt: user.subscriptionExpiresAt,
       },
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error. Please try again.' });
+    res.status(500).json({ message: 'Internal server error. Please contact support.' });
   }
 });
 
@@ -118,7 +136,11 @@ const { authenticate } = require('../middleware/auth');
 
 router.get('/me', authenticate, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id)
+      .select('-password -likedUsers -dislikedUsers');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
     res.json({ user });
   } catch (error) {
     res.status(500).json({ message: 'Server error.' });

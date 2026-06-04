@@ -1,32 +1,45 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Flame, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Flame, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
   const { login, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setError('');
+  };
+
+  const doLogin = async (email, password) => {
+    const result = await login(email, password);
+    if (result.success) {
+      toast.success(result.message || 'Welcome back! 🔥');
+      const state = useAuthStore.getState();
+      navigate(state.user?.isProfileComplete ? '/discover' : '/edit-profile');
+    } else {
+      setError(result.message || 'Login failed. Please check your credentials.');
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     if (!form.email || !form.password) {
-      toast.error('Please fill in all fields');
+      setError('Please fill in both email and password.');
       return;
     }
-    const result = await login(form.email, form.password);
-    if (result.success) {
-      toast.success(result.message);
-      navigate('/discover');
-    } else {
-      toast.error(result.message);
-    }
+    await doLogin(form.email, form.password);
+  };
+
+  const handleDemoLogin = async () => {
+    setError('');
+    await doLogin('demo@flamr.com', 'demo1234');
   };
 
   return (
@@ -35,23 +48,23 @@ export default function LoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'var(--flame-dark)',
+      background: 'var(--aurora-bg)',
       padding: '24px',
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {/* Background */}
+      {/* Background blobs */}
       <div style={{
         position: 'absolute', top: '-100px', right: '-100px',
         width: '400px', height: '400px',
-        background: 'radial-gradient(circle, rgba(255, 68, 88, 0.12) 0%, transparent 70%)',
-        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%)',
+        borderRadius: '50%', pointerEvents: 'none',
       }} />
       <div style={{
         position: 'absolute', bottom: '-100px', left: '-100px',
         width: '300px', height: '300px',
-        background: 'radial-gradient(circle, rgba(253, 41, 123, 0.08) 0%, transparent 70%)',
-        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, transparent 70%)',
+        borderRadius: '50%', pointerEvents: 'none',
       }} />
 
       <div className="glass animate-fadeInUp" style={{
@@ -61,32 +74,50 @@ export default function LoginPage() {
         position: 'relative', zIndex: 10,
       }}>
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{
             width: '64px', height: '64px',
-            background: 'var(--flame-gradient)',
+            background: 'var(--aurora-gradient)',
             borderRadius: '18px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 16px',
-            boxShadow: '0 8px 30px rgba(255, 68, 88, 0.4)',
+            boxShadow: '0 8px 30px rgba(124, 58, 237, 0.4)',
           }}>
             <Flame size={32} color="white" />
           </div>
-          <h1 className="gradient-text" style={{
-            fontSize: '32px', fontWeight: '800',
-            fontFamily: 'Playfair Display, serif',
-          }}>Welcome back</h1>
-          <p style={{ color: 'var(--flame-muted)', marginTop: '8px', fontSize: '15px' }}>
+          <h1 className="gradient-text" style={{ fontSize: '32px', fontWeight: '800' }}>
+            Welcome back
+          </h1>
+          <p style={{ color: 'var(--aurora-muted)', marginTop: '8px', fontSize: '15px' }}>
             Sign in to continue finding your match 🔥
           </p>
         </div>
 
+        {/* Error Banner */}
+        {error && (
+          <div style={{
+            background: 'rgba(255, 68, 88, 0.1)',
+            border: '1px solid rgba(255, 68, 88, 0.35)',
+            borderRadius: '12px',
+            padding: '12px 16px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            color: '#FF6B7A',
+            fontSize: '14px',
+          }}>
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+            {error}
+          </div>
+        )}
+
+        {/* Sign In Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Email */}
           <div style={{ position: 'relative' }}>
             <Mail size={18} style={{
               position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)',
-              color: 'var(--flame-muted)',
+              color: 'var(--aurora-muted)', zIndex: 5,
             }} />
             <input
               type="email"
@@ -96,14 +127,15 @@ export default function LoginPage() {
               onChange={handleChange}
               className="input-field"
               style={{ paddingLeft: '46px' }}
+              autoComplete="email"
+              required
             />
           </div>
 
-          {/* Password */}
           <div style={{ position: 'relative' }}>
             <Lock size={18} style={{
               position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)',
-              color: 'var(--flame-muted)',
+              color: 'var(--aurora-muted)', zIndex: 5,
             }} />
             <input
               type={showPassword ? 'text' : 'password'}
@@ -113,6 +145,8 @@ export default function LoginPage() {
               onChange={handleChange}
               className="input-field"
               style={{ paddingLeft: '46px', paddingRight: '46px' }}
+              autoComplete="current-password"
+              required
             />
             <button
               type="button"
@@ -120,7 +154,7 @@ export default function LoginPage() {
               style={{
                 position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)',
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--flame-muted)',
+                color: 'var(--aurora-muted)', zIndex: 5,
               }}
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -133,8 +167,6 @@ export default function LoginPage() {
             disabled={isLoading}
             style={{
               width: '100%',
-              padding: '15px',
-              fontSize: '16px',
               marginTop: '8px',
               opacity: isLoading ? 0.7 : 1,
               cursor: isLoading ? 'not-allowed' : 'pointer',
@@ -144,28 +176,44 @@ export default function LoginPage() {
           </button>
         </form>
 
+        {/* Divider */}
         <div style={{
-          textAlign: 'center', marginTop: '28px',
-          color: 'var(--flame-muted)', fontSize: '14px',
+          display: 'flex', alignItems: 'center', gap: '12px', margin: '20px 0',
         }}>
-          Don't have an account?{' '}
-          <Link to="/signup" style={{ color: 'var(--flame-primary)', fontWeight: '600', textDecoration: 'none' }}>
-            Sign up free
-          </Link>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+          <span style={{ color: 'var(--aurora-muted)', fontSize: '12px' }}>or try demo</span>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
         </div>
 
-        {/* Demo credentials notice */}
+        {/* Demo Login */}
+        <button
+          type="button"
+          onClick={handleDemoLogin}
+          disabled={isLoading}
+          style={{
+            width: '100%', padding: '14px',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '14px',
+            color: 'white', fontSize: '14px', fontWeight: '600',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s ease',
+            fontFamily: 'Outfit, sans-serif',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+        >
+          🚀 Try Demo Account
+        </button>
+
         <div style={{
-          marginTop: '24px',
-          background: 'rgba(255, 68, 88, 0.05)',
-          border: '1px solid rgba(255, 68, 88, 0.15)',
-          borderRadius: '12px',
-          padding: '14px 16px',
-          fontSize: '13px',
-          color: 'var(--flame-muted)',
-          textAlign: 'center',
+          textAlign: 'center', marginTop: '24px',
+          color: 'var(--aurora-muted)', fontSize: '14px',
         }}>
-          💡 New here? Create an account to start swiping!
+          Don't have an account?{' '}
+          <Link to="/signup" style={{ color: 'var(--aurora-primary)', fontWeight: '600', textDecoration: 'none' }}>
+            Sign up free
+          </Link>
         </div>
       </div>
     </div>

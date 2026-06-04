@@ -104,7 +104,7 @@ function ProfileCard({ user, onSwipeLeft, onSwipeRight, isTop, style = {} }) {
         position: 'absolute',
         width: '100%',
         maxWidth: '420px',
-        height: '580px',
+        height: '100%',
         cursor: isTop ? 'grab' : 'default',
         userSelect: 'none',
         transition: 'all 0.3s ease',
@@ -280,12 +280,15 @@ export default function DiscoverPage() {
   };
 
   useEffect(() => {
-    if (user?.isVerified) {
+    const isTrialActive = user?.trialExpiresAt && new Date() < new Date(user.trialExpiresAt);
+    const isSubscriptionActive = user?.subscriptionExpiresAt && new Date() < new Date(user.subscriptionExpiresAt);
+    
+    if (user?.isVerified || isTrialActive || isSubscriptionActive) {
       fetchUsers();
     } else {
       setIsLoading(false);
     }
-  }, [user?.isVerified]);
+  }, [user?.isVerified, user?.trialExpiresAt, user?.subscriptionExpiresAt]);
 
   const handleLike = async (userId) => {
     try {
@@ -347,7 +350,13 @@ export default function DiscoverPage() {
     );
   }
 
-  if (!user?.isVerified) {
+  const isTrialActive = user?.trialExpiresAt && new Date() < new Date(user.trialExpiresAt);
+  const isSubscriptionActive = user?.subscriptionExpiresAt && new Date() < new Date(user.subscriptionExpiresAt);
+  const isAccessAllowed = isTrialActive || isSubscriptionActive || user?.isVerified;
+
+  if (!isAccessAllowed) {
+    const trialDate = user?.trialExpiresAt ? new Date(user.trialExpiresAt).toLocaleString() : 'N/A';
+    
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -362,25 +371,38 @@ export default function DiscoverPage() {
           <ShieldCheck size={40} color="#FF4458" />
         </div>
         <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '16px' }}>
-          Verification Required
+          Free Trial Expired
         </h2>
         <p style={{ color: 'var(--flame-muted)', fontSize: '16px', maxWidth: '400px', lineHeight: '1.6', marginBottom: '32px' }}>
-          To keep our community safe and ensure <strong>ONLY original accounts</strong> use Flamr (no fake accounts allowed!), we require a one-time verification fee.
+          Your 24-hour free trial ended on <strong>{trialDate}</strong>. Subscribe now to continue finding your match and chatting with original accounts.
         </p>
-        <div className="glass" style={{ padding: '24px', borderRadius: '16px', maxWidth: '350px', width: '100%', marginBottom: '32px' }}>
-          <div style={{ fontSize: '36px', fontWeight: '800', color: 'white', marginBottom: '8px' }}>$49</div>
-          <div style={{ color: 'var(--flame-muted)', fontSize: '14px', marginBottom: '20px' }}>Lifetime Verification</div>
+        <div className="glass" style={{ padding: '32px', borderRadius: '24px', maxWidth: '380px', width: '100%', marginBottom: '32px', border: '1px solid var(--aurora-primary)' }}>
+          <div style={{ display: 'inline-block', padding: '4px 12px', background: 'var(--aurora-primary)', borderRadius: '100px', fontSize: '11px', fontWeight: '700', color: 'white', marginBottom: '16px' }}>POPULAR</div>
+          <div style={{ fontSize: '42px', fontWeight: '900', color: 'white', marginBottom: '4px' }}>499</div>
+          <div style={{ color: 'var(--flame-muted)', fontSize: '14px', marginBottom: '24px' }}>per month</div>
+          
+          <ul style={{ textAlign: 'left', listStyle: 'none', padding: 0, marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {['Unlimited Swipes', 'Global Discovery', 'Advanced Psychometric Matching', 'Verified Badge'].map(feat => (
+              <li key={feat} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'rgba(255,255,255,0.8)' }}>
+                <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#00D26A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Star size={10} color="white" fill="white" />
+                </div>
+                {feat}
+              </li>
+            ))}
+          </ul>
+
           <button
             onClick={handleVerify}
             disabled={isVerifying}
             className="btn-primary"
-            style={{ width: '100%', padding: '14px', fontSize: '16px' }}
+            style={{ width: '100%', padding: '16px', fontSize: '16px' }}
           >
-            {isVerifying ? 'Processing...' : 'Pay $49 to Verify'}
+            {isVerifying ? 'Processing...' : 'Subscribe for 499/mo'}
           </button>
         </div>
         <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', maxWidth: '300px' }}>
-          By verifying your account, you agree to our terms of service and community guidelines. Fake accounts will be banned without refund.
+          Secure payment via Stripe. Cancel anytime. By subscribing, you agree to our Terms of Service.
         </p>
       </div>
     );
@@ -395,11 +417,11 @@ export default function DiscoverPage() {
       {/* Header */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        width: '100%', maxWidth: '480px', marginBottom: '20px',
+        width: '100%', maxWidth: '480px', marginBottom: '16px',
       }}>
         <div>
-          <h2 style={{ fontSize: '22px', fontWeight: '700' }}>Discover</h2>
-          <p style={{ color: 'var(--flame-muted)', fontSize: '13px', marginTop: '2px' }}>
+          <h2 style={{ fontSize: 'clamp(18px, 5vw, 22px)', fontWeight: '700' }}>Discover</h2>
+          <p style={{ color: 'var(--flame-muted)', fontSize: '12px', marginTop: '2px' }}>
             {noMore ? 'No more profiles' : `${users.length - currentIndex} profiles left`}
           </p>
         </div>
@@ -409,18 +431,18 @@ export default function DiscoverPage() {
             background: showFilters ? 'var(--flame-gradient)' : 'rgba(255,255,255,0.05)',
             border: showFilters ? 'none' : '1px solid rgba(255,255,255,0.1)',
             borderRadius: '12px',
-            padding: '10px 16px',
+            padding: '8px 14px',
             color: 'white',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            fontSize: '14px',
+            fontSize: '13px',
             fontWeight: '500',
           }}
         >
-          <SlidersHorizontal size={16} />
-          Filters
+          <SlidersHorizontal size={14} />
+          <span>Filters</span>
         </button>
       </div>
 
@@ -486,9 +508,12 @@ export default function DiscoverPage() {
         <>
           <div style={{
             position: 'relative',
-            width: '100%', maxWidth: '420px',
-            height: '580px',
-            marginBottom: '32px',
+            width: '100%', 
+            maxWidth: '420px',
+            flex: 1,
+            maxHeight: 'min(580px, 70vh)',
+            marginBottom: '24px',
+            zIndex: 10,
           }}>
             {visibleUsers.map((user, i) => (
               <ProfileCard

@@ -9,11 +9,20 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
+    host: true,        // Listen on 0.0.0.0 — makes it reachable from mobile on same Wi-Fi
+    strictPort: false, // Auto-pick next port if 5173 is busy
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
       },
+      '/socket.io': {
+        target: 'http://127.0.0.1:5000',
+        ws: true,
+      },
     },
+  },
+  build: {
+    chunkSizeWarningLimit: 1600, // Adjust the chunk size limit for warnings
   },
 })
