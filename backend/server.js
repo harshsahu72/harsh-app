@@ -25,10 +25,13 @@ const messageRoutes = require('./routes/messages');
 const app = express();
 const server = http.createServer(app);
 
+// Use CLIENT_URL environment variable for CORS security
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+
 // Socket.io setup
 const io = new Server(server, {
   cors: {
-    origin: true, // Allow all origins — consistent with Express CORS (dev mode)
+    origin: process.env.NODE_ENV === 'production' ? clientUrl : true,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -36,7 +39,7 @@ const io = new Server(server, {
 
 // Middleware
 app.use(cors({
-  origin: true, // Allow all origins (dev mode)
+  origin: process.env.NODE_ENV === 'production' ? clientUrl : true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
