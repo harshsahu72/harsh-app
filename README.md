@@ -3,7 +3,8 @@
 
 A full-stack **Tinder-like dating application** built with React, Node.js, Express, MongoDB, and Socket.io. Features real-time chat, swipe cards with animations, match detection, and a beautiful dark-mode UI.
 
-![Flamr Banner](https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=1200&h=300&fit=crop)
+![Flamr Banner](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTKKQyPk0CbNiW9o_7fGKOCOkHS6fis6R3DWw&s)
+
 
 ---
 
@@ -312,3 +313,4 @@ MIT License — built with ❤️ and 🔥 by Harsh Sahu
 ---
 
 *Made with Flamr — Find your flame! 🔥*
+
